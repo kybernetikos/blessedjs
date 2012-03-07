@@ -21,16 +21,16 @@ I will add to it over time, but the core provides the absolute minimum.
    		failing fast if someone changes something.
    
    unBindAt(object, function, [argument number])
-   		Converts a utility function that takes the subject it is to operate on
-   		as a parameter into a method where the subject is the object before the
-   		dot in a method call.
+   		Converts a utility function that takes the subject it is to operate
+   		on as a parameter into a method where the subject is the object
+   		before the dot in a method call.
    
    bless(blessee, benediction)
-   		Does a batch unBindAt on all of the functions in 'benediction', copying
-   		them to 'blessee' as methods.
+   		Does a batch unBindAt on all of the functions in 'benediction', 
+   		copying	them to 'blessee' as methods.
 
 I have tried to ensure that it works with the closure compiler, and that the
 core supports IE6 up. I have other modules to add that are ecmascript 5 only.
 
 If you use them a lot, add them all to the global namespace with
-	bless(window, Blessed);
+	mixin(window, Blessed);
