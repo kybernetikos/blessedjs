@@ -37,6 +37,6 @@
 	}
 %><%
 	ServletContext context = session.getServletContext();
-	File srcDir = new File(context.getRealPath(request.getServletPath()+"/../js/src"));
+	File srcDir = new File(context.getRealPath(request.getServletPath()+"/../../js/src"));
 	include(srcDir, response);
 %>
