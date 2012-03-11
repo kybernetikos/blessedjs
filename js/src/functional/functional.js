@@ -1,8 +1,6 @@
 this["Functional"] = (function() {
 	"use strict";
-	
 	function toArray(arg, skipping) {return Array.prototype.slice.call(arg, skipping);}
-
 	var basic = {
 			'or': function or(a, b) {return a || b;},
 			'and': function and(a, b) {return a && b;},
@@ -37,12 +35,34 @@ this["Functional"] = (function() {
 	basic["greaterThanOrEqual"] = basic["lessOrEqual"];
 	basic["lessThanOrEqual"] = basic["greaterOrEqual"];
 	
+	/**
+	 * <p>Currying is a technique for making a function that takes many arguments
+	 * into a chain of functions taking only a single argument and returning
+	 * functions, until the last one in the chain returns the value.</p>
+	 * 
+	 * An example:
+	 * <pre>var plus = curry(function(a, b) {return a + b;});</pre>
+	 * 
+	 * <p>Now plus can be called with a single argument to return a function that
+	 * 'bakes' in that argument.</p>
+	 * 
+	 * <pre>var addFive = plus(5);
+	 * 	addFive(10); // returns 15
+	 * </pre>
+	 * 
+	 * <p>This is particularly useful in combination with higher-order functions
+	 * that iterate over arrays, applying their function parameter to each
+	 * element.</p> 
+	 * 
+	 * @param {function} func The function to curry.  Must not be null.
+	 */
 	function curry(func, minArgs) {
-		if (func["_curried"]) return func;
+		if (func == null) throw new Error("curry: Bad argument: Parameter 'func' was null or undefined.");
 		if (minArgs == undefined) minArgs = (func["_applyLength"] || func.length);
-		if (minArgs === 0) {
+		if (minArgs < 2) {
 			return func;
 		}
+		if (func["_curried"]) return func;
 		function funcWithArgsFrozen(frozenargs) {
 			var result = function returnedFunc() {
 				if (arguments.length === 0) {

@@ -100,7 +100,7 @@ describe("BlessedJSTest:", function() {
 
 		it("should allow a subclass to easily call the superconstructor.", function() {
 			function Subclass() {
-				this.parent(5);
+				Subclass.parent.call(this, 5);
 			}
 			Blessed.extend(Subclass, Superclass);
 			var testObj = new Subclass();
@@ -112,7 +112,7 @@ describe("BlessedJSTest:", function() {
 			Blessed.extend(Subclass, Superclass);
 			expect(function() {
 				Blessed.extend(Subclass, Superclass);
-			}).toThrow("extend: Already extended.");
+			}).toThrow(Blessed.ERROR_MESSAGES["alreadyExtended"]);
 		});
 		
 		it("should not allow a subclass to be extended if its prototype has been modified.", function() {
@@ -120,12 +120,12 @@ describe("BlessedJSTest:", function() {
 			Subclass.prototype.bob = "hello";
 			expect(function() {
 				Blessed.extend(Subclass, Superclass);
-			}).toThrow("extend: Already extended: prototype has property 'bob'.");
+			}).toThrow(Blessed.interpolate(Blessed.ERROR_MESSAGES["extendedProp"], 'extend', 'bob', 'string'));
 		});
 		
 		it("should cause the superclasses properties to become accessible on the subclass unless overridden.", function() {
 			function Subclass(arg) {
-				this.parent(arg);
+				Subclass.parent.call(this, arg);
 				this.oneThingSetInSuper = 21;
 			}
 			Blessed.extend(Subclass, Superclass);
@@ -164,10 +164,23 @@ describe("BlessedJSTest:", function() {
 			var testObj = {eatVegetable: function(){}};
 			expect(function() {
 				Blessed.assertImplements(testObj, simpleInterfaceFormat);
-			}).toThrow("Interface property 'clone' is not implemented.");
+			}).toThrow(Blessed.interpolate(Blessed.ERROR_MESSAGES["unimplemented"], 'clone'));
 			expect(function() {
 				Blessed.assertImplements(testObj, moreDetailedInterfaceFormat);
-			}).toThrow("Interface property 'stomp' is not implemented.");
+			}).toThrow(Blessed.interpolate(Blessed.ERROR_MESSAGES["unimplemented"], 'stomp'));
+		});
+	});
+	
+	describe("interpolate", function() {
+		describe("when called with only a string", function() {
+			it("should return the string.", function(){
+				expect(Blessed.interpolate("hello")).toEqual("hello");
+			});
+		});
+		describe("when called with a string and two parameters", function(){
+			 it("should interpolate those parameters into the string.", function() {
+				 expect(Blessed.interpolate("{0} sends you greetings {1}.", "Ceasar", "Cleopatra")).toEqual("Ceasar sends you greetings Cleopatra.");
+			 });
 		});
 	});
 });

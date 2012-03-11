@@ -5,7 +5,20 @@
  */
 this['Blessed'] = (function() {
 	"use strict";
-	/** @scope Blessed */
+
+	/**
+	 * This is exposed only for testing purposes.
+	 * @private
+	 */
+	var ERROR_MESSAGES = {
+			"undefined": "{0}: Bad argument: parameter '{1}' was null or undefined.",
+			"notFunc": "{0}: Bad argument: parameter '{1}' should be a function or the name of a function. Was '{2}' (type {3}).",
+			"notNumber": "{0}: Bad argument: parameter '{1}' should be a number. Was '{2}' (type {3}).",
+			"negative": "{0}: Bad argument: parameter '{1}' may not be negative, was '{2}'.",
+			"unimplemented": "Interface property '{0}' is not implemented.",
+			"extendedProp": "{0}: Already extended: prototype has property '{1}' (type {2}).",
+			"alreadyExtended": "extend: Already extended."
+	};
 	
 	/**
 	 * Just a renaming to make later code more readable.
@@ -52,14 +65,14 @@ this['Blessed'] = (function() {
 	 * @memberOf Blessed
 	 */
 	function unBindAt(object, func, thisArgNumber) {
-		if (object == null) throw new Error("unBindAt: Bad argument: parameter 'object' was null or undefined.");
-		if (func == null) throw new Error("unBindAt: Bad argument: parameter 'methodName' was null or undefined.");
+		if (object == null) throw new Error(interpolate(ERROR_MESSAGES["undefined"], "unBindAt", "object"));
+		if (func == null) throw new Error(interpolate(ERROR_MESSAGES["undefined"], "unBindAt", "func"));
 		if (typeof func === 'string' && typeof object[func] === 'function') func = object[func];
-		if (typeof func !== 'function') throw new Error("unBindAt: Bad argument: parameter 'func' should be a function or the name of a function. Was '"+func+"' (type "+(typeof func)+").");
+		if (typeof func !== 'function') throw new Error(interpolate(ERROR_MESSAGES["notFunc"], "unBindAt", "func", func, typeof func));
 		if (thisArgNumber == null) thisArgNumber = 0;
 		if (thisArgNumber === LAST_ARG) thisArgNumber = (func["_applyLength"] || func.length) - 1;
-		if (isNaN(thisArgNumber)) throw new Error("unBindAt: Bad argument: parameter 'thisArgNumber' should be a number, was '"+thisArgNumber+"' (type "+(typeof thisArgNumber)+").");
-		if (thisArgNumber < 0) throw new Error("unBindAt: Bad argument: parameter 'thisArgNumber' may not be negative, was '"+thisArgNumber+"'.");
+		if (isNaN(thisArgNumber)) throw new Error(interpolate(ERROR_MESSAGES["notNumber"], "unBindAt", "thisArgNumber", thisArgNumber, typeof thisArgNumber));
+		if (thisArgNumber < 0) throw new Error(interpolate(ERROR_MESSAGES["negative"], "unBindAt", "thisArgNumber", thisArgNumber));
 		
 		return function() {
 			var args = toArray(arguments); 
@@ -101,8 +114,8 @@ this['Blessed'] = (function() {
 	 * @memberOf Blessed
 	 */
 	function bless(blessee, benediction, inWhichArg) {
-		if (benediction == null) throw new Error("bless: Bad argument: 'benediction' is null or undefined.");
-		if (blessee == null) throw new Error("bless: Bad argument: 'blessee' is null or undefined.");
+		if (benediction == null) throw new Error(interpolate(ERROR_MESSAGES["undefined"], "bless", "benediction"));
+		if (blessee == null) throw new Error(interpolate(ERROR_MESSAGES["undefined"], "bless", "blessee"));
 		blessee = objOrPrototype(blessee);
 		benediction = objOrPrototype(benediction);
 		
@@ -135,7 +148,7 @@ this['Blessed'] = (function() {
 	 * 
 	 * <p>Setting up the prototype chain is only half the battle,
 	 * remember to also call the superconstructor in the subclass constructor
-	 * <pre>	this.parent(arg1, arg2);</pre>
+	 * <pre>	&lt;SubclassName&gt;.parent.call(this, arg1, arg2);</pre>
 	 * <p>If you're properly paranoid, check it for a return value, too, since if it
 	 * returns something you need to work with that instead of 'this' and return it
 	 * yourself to make it work.  Better to avoid extending constructors that do that...</p>
@@ -146,26 +159,25 @@ this['Blessed'] = (function() {
 	 * @memberOf Blessed
 	 */
 	function extend(subclass, superclass) {
-		if (subclass == null) throw new Error("extend: Bad argument: argument 'subclass' may not be null or undefined.");
-		if (superclass == null) throw new Error("extend: Bad argument: argument 'superclass' may not be null or undefined.");
+		if (subclass == null) throw new Error(interpolate(ERROR_MESSAGES["undefined"], "extend", "subclass"));
+		if (superclass == null) throw new Error(interpolate(ERROR_MESSAGES["undefined"], "extend", "superclass"));
 		// Ensure that the subclass is not already extended.
 		// There is only one prototype chain in JS.  Calling extend twice is likely to be
 		// a coding error.
 		if (subclass.prototype && subclass.prototype.constructor === subclass) {
 			for (var key in subclass.prototype) {
 				if (subclass.prototype.hasOwnProperty(key) === true) {
-					throw new Error("extend: Already extended: prototype has property '"+key+"'.");
+					throw new Error(interpolate(ERROR_MESSAGES["extendedProp"], "extend", key, typeof subclass.prototype[key]));
 				}
 			}
 		} else {
-			throw new Error("extend: Already extended.");
+			throw new Error(ERROR_MESSAGES["alreadyExtended"]);
 		}
 		
 		// this works in older browsers and does pretty much the same as 
 		//     subclass.prototype = Object.create(superclass.prototype);
-		function _Clazz() {
-			this.parent = superclass;
-		}
+		subclass["parent"] = superclass;
+		function _Clazz() {}
 		_Clazz.prototype = superclass.prototype;
 		subclass.prototype = new _Clazz();
 	}
@@ -197,7 +209,7 @@ this['Blessed'] = (function() {
 	function mixin(child, mix) {
 		var i, len, property, ingredient;
 		
-		if (child == null) throw new Error("mixin: Bad argument: 'child' was null or undefined.");
+		if (child == null) throw new Error(interpolate(ERROR_MESSAGES["undefined"], "mixin", "child"));
 		child = objOrPrototype(child);
 		
 		for (i = 1, len = arguments.length; i < len; ++i) {
@@ -223,18 +235,38 @@ this['Blessed'] = (function() {
 	 * @memberOf Blessed
 	 */
 	function assertImplements(child, interf) {
-		if (child == null) throw new Error("assertImplements: Bad argument: 'child' was null or undefined.");
-		if (interf == null) throw new Error("assertImplements: Bad argument: 'interface' was null or undefined.");
+		if (child == null) throw new Error(interpolate(ERROR_MESSAGES["undefined"], "assertImplements", "child"));
+		if (interf == null) throw new Error(interpolate(ERROR_MESSAGES["undefined"], "assertImplements", "interf"));
 		
 		interf = objOrPrototype(interf);
 		for (var property in interf) {
 			if (child[property] == null) {
-				throw new Error("Interface property '"+property+"' is not implemented.");
+				throw new Error(interpolate(ERROR_MESSAGES["unimplemented"], property));
 			}
 		}
 	};
 	
+	/**
+	 * <p>Takes a string and interpolates the other arguments. The format expected
+	 * for the string is that {0} indicates the first thing to be interpolated.</p>
+	 * 
+	 * An example:
+	 * <pre>interpolate("{0} world", "hello") == "hello world";</pre>
+	 * 
+	 * Will interpolate something into potentially many places in the string.
+	 * 
+	 * @param {string} str The string into which values should be interpolated.  If null will return null.
+	 */
+	function interpolate(str) {
+		if (str == null) return null;
+		for (var i = 1, len = arguments.length; i < len; ++i) {
+			str = str.replace("{"+(i-1)+"}", (arguments[i] || "").toString());
+		}
+		return str;
+	}
+	
 	return {
+		'interpolate': interpolate, 'ERROR_MESSAGES':ERROR_MESSAGES,
 		'LAST_ARG':LAST_ARG, 'unBindAt':unBindAt,
 		'bless':bless, 'extend':extend, 'mixin':mixin, 'assertImplements':assertImplements
 	};
