@@ -1,0 +1,7 @@
+{
+    "name": "blessedjs",
+  "version": "0.0.0",
+  "author": "kybernetikos@gmail.com",
+  "description": "a minimal library for js",
+  "main": "./js/src/blessed/blessed.js"
+}
